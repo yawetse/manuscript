@@ -25,11 +25,11 @@ platterInfoPanel = new platter({
 
 window.onload = function(){
 	// console.log("window loaded");
+	platterInfoPanel.init();
 	platterTemplate.init();
 	platterData.init();
 	platterAssets.init();
 	platterStyles.init();
-	platterInfoPanel.init();
 };
 
 window.platterAssets = platterAssets;

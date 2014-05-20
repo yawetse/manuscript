@@ -23,14 +23,28 @@
 		background: #fff;
 		bottom: 1.2em;
 		position: relative;
-		.transition(bottom 0.1s ease-in);
+		.transition(bottom 0.1s ease-in 0.2s, width 0.3s ease-in ;);
 		&:hover{
 			bottom: 1.6em;
+		}
+		&._pltr-hide{
+			.transition(bottom 0.1s ease-in 0.2s, width 0.3s ease-in ;);
+			bottom: .7em;
+			width: 0.7em;
+			overflow: hidden;
+			background: #333;
+			color: #fff;
+			&:hover{
+				width: auto;
+				bottom: 1.6em;
+			}
 		}
 		._pltr-open-window{
 			cursor: pointer;
 			margin-left: 0.5em;
 			font-weight: bold;
+			top: -17%;
+			position: relative;
 			font-size: 75%;
 		}
    	}
@@ -41,7 +55,7 @@
 		background: rgba(200, 200, 200, 0.6);
    		overflow: auto;
    		overflow-x: hidden;
-		.transition(width 0.1s ease-in);
+		.transition(width 0.1s ease-out);
    		&._pltr-right{
 			right:0em;
 			bottom:0em;
@@ -57,7 +71,6 @@
    			min-height: 15em;
    		}
    		#_pltr-ecmc{
-			.transition(height 0.1s ease-in);
 			background: rgba(200, 200, 200, 0.6);
 			width: 1.5em;
 			position: fixed;
@@ -65,8 +78,10 @@
 			padding: .1em .3em;
 			height:0;
 			overflow: hidden;
+			cursor: pointer;
+			.transition(height 0.1s ease-in);
 			&:hover, &._pltr-expanded{
-				height:auto;
+				height:1.3em;
 			}
    		}
    	}
@@ -78,4 +93,25 @@
 	-ms-transition: @tprop;
 	-o-transition: @tprop;
 	transition: @tprop;
+}
+.transition-duration(@tprop){
+	-webkit-transition-duration: @tprop;
+	-moz-transition-duration: @tprop;
+	-ms-transition-duration: @tprop;
+	-o-transition-duration: @tprop;
+	transition-duration: @tprop;
+}
+.transition-property(@tprop){
+	-webkit-transition-property: @tprop;
+	-moz-transition-property: @tprop;
+	-ms-transition-property: @tprop;
+	-o-transition-property: @tprop;
+	transition-property: @tprop;
+}
+.transition-timing-function(@tprop){
+	-webkit-transition-timing-function: @tprop;
+	-moz-transition-timing-function: @tprop;
+	-ms-transition-timing-function: @tprop;
+	-o-transition-timing-function: @tprop;
+	transition-timing-function: @tprop;
 }

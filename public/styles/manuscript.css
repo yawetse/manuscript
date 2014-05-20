@@ -20,19 +20,37 @@
   background: #fff;
   bottom: 1.2em;
   position: relative;
-  -webkit-transition: bottom 0.1s ease-in;
-  -moz-transition: bottom 0.1s ease-in;
-  -ms-transition: bottom 0.1s ease-in;
-  -o-transition: bottom 0.1s ease-in;
-  transition: bottom 0.1s ease-in;
+  -webkit-transition: bottom 0.1s ease-in 0.2s, width 0.3s ease-in;
+  -moz-transition: bottom 0.1s ease-in 0.2s, width 0.3s ease-in;
+  -ms-transition: bottom 0.1s ease-in 0.2s, width 0.3s ease-in;
+  -o-transition: bottom 0.1s ease-in 0.2s, width 0.3s ease-in;
+  transition: bottom 0.1s ease-in 0.2s, width 0.3s ease-in;
 }
 #_pltrContainer ._pltr-tab:hover {
+  bottom: 1.6em;
+}
+#_pltrContainer ._pltr-tab._pltr-hide {
+  -webkit-transition: bottom 0.1s ease-in 0.2s, width 0.3s ease-in;
+  -moz-transition: bottom 0.1s ease-in 0.2s, width 0.3s ease-in;
+  -ms-transition: bottom 0.1s ease-in 0.2s, width 0.3s ease-in;
+  -o-transition: bottom 0.1s ease-in 0.2s, width 0.3s ease-in;
+  transition: bottom 0.1s ease-in 0.2s, width 0.3s ease-in;
+  bottom: .7em;
+  width: 0.7em;
+  overflow: hidden;
+  background: #333;
+  color: #fff;
+}
+#_pltrContainer ._pltr-tab._pltr-hide:hover {
+  width: auto;
   bottom: 1.6em;
 }
 #_pltrContainer ._pltr-tab ._pltr-open-window {
   cursor: pointer;
   margin-left: 0.5em;
   font-weight: bold;
+  top: -17%;
+  position: relative;
   font-size: 75%;
 }
 #_pltrContainer #_pltr-elementsContainer {
@@ -42,11 +60,11 @@
   background: rgba(200, 200, 200, 0.6);
   overflow: auto;
   overflow-x: hidden;
-  -webkit-transition: width 0.1s ease-in;
-  -moz-transition: width 0.1s ease-in;
-  -ms-transition: width 0.1s ease-in;
-  -o-transition: width 0.1s ease-in;
-  transition: width 0.1s ease-in;
+  -webkit-transition: width 0.1s ease-out;
+  -moz-transition: width 0.1s ease-out;
+  -ms-transition: width 0.1s ease-out;
+  -o-transition: width 0.1s ease-out;
+  transition: width 0.1s ease-out;
 }
 #_pltrContainer #_pltr-elementsContainer._pltr-right {
   right: 0em;
@@ -63,11 +81,6 @@
   min-height: 15em;
 }
 #_pltrContainer #_pltr-elementsContainer #_pltr-ecmc {
-  -webkit-transition: height 0.1s ease-in;
-  -moz-transition: height 0.1s ease-in;
-  -ms-transition: height 0.1s ease-in;
-  -o-transition: height 0.1s ease-in;
-  transition: height 0.1s ease-in;
   background: rgba(200, 200, 200, 0.6);
   width: 1.5em;
   position: fixed;
@@ -75,8 +88,14 @@
   padding: .1em .3em;
   height: 0;
   overflow: hidden;
+  cursor: pointer;
+  -webkit-transition: height 0.1s ease-in;
+  -moz-transition: height 0.1s ease-in;
+  -ms-transition: height 0.1s ease-in;
+  -o-transition: height 0.1s ease-in;
+  transition: height 0.1s ease-in;
 }
 #_pltrContainer #_pltr-elementsContainer #_pltr-ecmc:hover,
 #_pltrContainer #_pltr-elementsContainer #_pltr-ecmc._pltr-expanded {
-  height: auto;
+  height: 1.3em;
 }

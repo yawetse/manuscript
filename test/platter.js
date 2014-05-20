@@ -33,8 +33,8 @@ describe('Module configuration', function () {
 		});
 
 		it('should allow you to overwrite default options',function(){
-			platter = new this.browser.window.platter({resize:false});
-			platter.config().resize.should.equal(false);
+			platter = new this.browser.window.platter({idSelector:"pl1"});
+			platter.config().idSelector.should.equal("pl1");
 		});
 
 		it('should emit initialization event',function(done){
@@ -53,16 +53,16 @@ describe('Module configuration', function () {
 
 			duplicateDomElement.setAttribute('id','document_pltr');
 			this.browser.document.body.appendChild(duplicateDomElement);
-
+			platter = new this.browser.window.platter({idSelector:'document'});
 			try{
 				expect(function(){
-					platter = new this.browser.window.platter({idSelector:'document'});
-				}).to.throw(Error);
+					platter.init();
+				}).to.throw('idSelector must be unique');
+					platter.init();
 
-					platter = new this.browser.window.platter({idSelector:'document'});
 			}
 			catch(e){
-				expect(e.name).to.equal("Error");
+				expect(e.message).to.equal("idSelector must be unique");
 			}
 		});
 	});

@@ -1,14 +1,14 @@
 'use strict';
 
 var platter = require('../../lib/platter'),
-	platterDoc,
+	platterTemplate,
 	platterAssets,
 	platterData,
 	platterStyles,
 	platterInfoPanel;
 
-platterDoc = new platter({
-	idSelector : 'document'
+platterTemplate = new platter({
+	idSelector : 'template'
 });
 platterData = new platter({
 	idSelector : 'data'
@@ -16,17 +16,25 @@ platterData = new platter({
 platterAssets = new platter({
 	idSelector : 'assets'
 });
+platterStyles = new platter({
+	idSelector : 'styles'
+});
+platterInfoPanel = new platter({
+	idSelector : 'info'
+});
 
 window.onload = function(){
 	// console.log("window loaded");
-	platterDoc.init();
+	platterTemplate.init();
 	platterData.init();
 	platterAssets.init();
+	platterStyles.init();
+	platterInfoPanel.init();
 };
 
 window.platterAssets = platterAssets;
 
-platterDoc.on("intializedPlatter",function(data){
+platterTemplate.on("intializedPlatter",function(data){
 	// console.log("got event",data);
 	var a = data;
 });

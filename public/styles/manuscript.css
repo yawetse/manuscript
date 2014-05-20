@@ -34,3 +34,15 @@
   margin-left: 0.5em;
   font-weight: bold;
 }
+#_pltrContainer #_pltr-elementsContainer {
+  position: absolute;
+  width: 50%;
+  height: 100%;
+}
+#_pltrContainer #_pltr-elementsContainer._pltr-right {
+  right: 0em;
+  bottom: 0em;
+}
+#_pltrContainer #_pltr-elementsContainer ._pltr-elementItem {
+  min-height: 15em;
+}

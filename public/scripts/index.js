@@ -2,14 +2,14 @@
 'use strict';
 
 var platter = require('../../lib/platter'),
-	platterDoc,
+	platterTemplate,
 	platterAssets,
 	platterData,
 	platterStyles,
 	platterInfoPanel;
 
-platterDoc = new platter({
-	idSelector : 'document'
+platterTemplate = new platter({
+	idSelector : 'template'
 });
 platterData = new platter({
 	idSelector : 'data'
@@ -17,17 +17,25 @@ platterData = new platter({
 platterAssets = new platter({
 	idSelector : 'assets'
 });
+platterStyles = new platter({
+	idSelector : 'styles'
+});
+platterInfoPanel = new platter({
+	idSelector : 'info'
+});
 
 window.onload = function(){
 	// console.log("window loaded");
-	platterDoc.init();
+	platterTemplate.init();
 	platterData.init();
 	platterAssets.init();
+	platterStyles.init();
+	platterInfoPanel.init();
 };
 
 window.platterAssets = platterAssets;
 
-platterDoc.on("intializedPlatter",function(data){
+platterTemplate.on("intializedPlatter",function(data){
 	// console.log("got event",data);
 	var a = data;
 });
@@ -135,6 +143,13 @@ var platter = function(config_options){
 		platterContainer.setAttribute("id","_pltrContainer");
 		classie.addClass(platterContainer,'_pltr-bottom');
 		document.body.appendChild(platterContainer);
+		this.emit("platterContainerCreated",platterContainer);
+
+		var platterElementsContainer = document.createElement('div');
+		platterElementsContainer.setAttribute("id","_pltr-elementsContainer");
+		classie.addClass(platterElementsContainer,'_pltr-right');
+		platterContainer.appendChild(platterElementsContainer);
+		this.emit("platterElementContainerCreated",platterContainer);
 	};
 
 	/**
@@ -148,6 +163,23 @@ var platter = function(config_options){
 		classie.addClass(platterHTML,'_pltr-item');
 		platterHTML.innerHTML =options.title+'<span class="_pltr-open-window">[]</span>';
 		document.querySelector('#_pltrContainer').appendChild(platterHTML);
+		this.emit("platterCreated",platterHTML);
+
+		if(options.platterContentElement){
+			document.querySelector('#_pltr-elementsContainer').appendChild(options.platterContentElement);
+			// options.platterContentElement
+			classie.addClass(options.platterContentElement,'_pltr-elementItem');
+			classie.addClass(options.platterContentElement,id);
+		}
+		else{
+			options.platterContentElement = document.createElement('div');
+			options.platterContentElement.innerHTML =options.title+'<span class="_pltr-open-window">[]</span>';
+			classie.addClass(options.platterContentElement,'_pltr-elementItem');
+			classie.addClass(options.platterContentElement,id);
+			document.querySelector('#_pltr-elementsContainer').appendChild(options.platterContentElement);
+		}
+		this.emit("platterCreatedPaneElement",options.platterContentElement);
+
 	};
 
 	/** hides platter in bar */
@@ -380,10 +412,7 @@ EventEmitter.prototype.addListener = function(type, listener) {
                     'leak detected. %d listeners added. ' +
                     'Use emitter.setMaxListeners() to increase limit.',
                     this._events[type].length);
-      if (typeof console.trace === 'function') {
-        // not supported in IE 10
-        console.trace();
-      }
+      console.trace();
     }
   }
 

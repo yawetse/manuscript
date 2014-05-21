@@ -31,6 +31,11 @@ var classie = require('classie'),
 	util = require('util');
 
 	require('../node_modules/codemirror/addon/edit/matchbrackets');
+	require('../node_modules/codemirror/addon/fold/foldcode');
+	require('../node_modules/codemirror/addon/fold/comment-fold');
+	require('../node_modules/codemirror/addon/fold/indent-fold');
+	require('../node_modules/codemirror/addon/fold/brace-fold');
+	require('../node_modules/codemirror/addon/fold/foldgutter');
 	require('../node_modules/codemirror/mode/css/css');
 
 /**
@@ -58,8 +63,11 @@ var manuscript = function(config_options){
 		documentMenu = document.getElementById('_mss_menu'),
 		styleEditor = CodeMirror.fromTextArea(document.getElementById("_mss_panel_textarea_stylepanel"), {
 			lineNumbers : true,
+		    lineWrapping: true,
 			matchBrackets : true,
-			mode: "text/x-less"
+			mode: "text/x-less",
+			gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+		    foldGutter: true
 		}),
 		platterTemplate = new platter({
 			idSelector : 'template'
@@ -100,7 +108,7 @@ var manuscript = function(config_options){
 	}.bind(this);
 
 	function styleWindowResizeEventHandler(e){
-		console.log("resize child window");
+		// console.log("resize child window");
 		styleEditor.refresh();
 	}
 
@@ -116,10 +124,11 @@ var manuscript = function(config_options){
 			newstylesheet.setAttribute("type","text/css"); newstylesheet.setAttribute("href",path.dirname(window.location)+"/styles/manuscript.css"); newstylesheet.setAttribute("rel","stylesheet" );
 			platterStyles.config().windowObjectReference.document.getElementsByTagName("head")[0].appendChild(newstylesheet);
 			styleEditor.refresh();
+			styleWindowResizeEventHandler();
 			clearTimeout(t);
-		},100);
+		},200);
 
-		console.log(platterStyles.config().windowObjectReference.window);
+		// console.log(platterStyles.config().windowObjectReference.window);
 		platterStyles.config().windowObjectReference.window.addEventListener("resize",styleWindowResizeEventHandler,false);
 	});
 	platterStyles.on("closedPlatterWindow",function(data){
@@ -139,7 +148,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 	window.manuscript = manuscript;
 	// window.path = path;
 }
-},{"../node_modules/codemirror/addon/edit/matchbrackets":11,"../node_modules/codemirror/mode/css/css":13,"classie":9,"codemirror":12,"domhelper":14,"events":3,"path":5,"platterjs":16,"util":8,"util-extend":18}],3:[function(require,module,exports){
+},{"../node_modules/codemirror/addon/edit/matchbrackets":11,"../node_modules/codemirror/addon/fold/brace-fold":12,"../node_modules/codemirror/addon/fold/comment-fold":13,"../node_modules/codemirror/addon/fold/foldcode":14,"../node_modules/codemirror/addon/fold/foldgutter":15,"../node_modules/codemirror/addon/fold/indent-fold":16,"../node_modules/codemirror/mode/css/css":18,"classie":9,"codemirror":17,"domhelper":19,"events":3,"path":5,"platterjs":21,"util":8,"util-extend":23}],3:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -1571,7 +1580,502 @@ module.exports = require('./lib/classie');
   });
 });
 
-},{"../../lib/codemirror":12}],12:[function(require,module,exports){
+},{"../../lib/codemirror":17}],12:[function(require,module,exports){
+// CodeMirror, copyright (c) by Marijn Haverbeke and others
+// Distributed under an MIT license: http://codemirror.net/LICENSE
+
+(function(mod) {
+  if (typeof exports == "object" && typeof module == "object") // CommonJS
+    mod(require("../../lib/codemirror"));
+  else if (typeof define == "function" && define.amd) // AMD
+    define(["../../lib/codemirror"], mod);
+  else // Plain browser env
+    mod(CodeMirror);
+})(function(CodeMirror) {
+"use strict";
+
+CodeMirror.registerHelper("fold", "brace", function(cm, start) {
+  var line = start.line, lineText = cm.getLine(line);
+  var startCh, tokenType;
+
+  function findOpening(openCh) {
+    for (var at = start.ch, pass = 0;;) {
+      var found = at <= 0 ? -1 : lineText.lastIndexOf(openCh, at - 1);
+      if (found == -1) {
+        if (pass == 1) break;
+        pass = 1;
+        at = lineText.length;
+        continue;
+      }
+      if (pass == 1 && found < start.ch) break;
+      tokenType = cm.getTokenTypeAt(CodeMirror.Pos(line, found + 1));
+      if (!/^(comment|string)/.test(tokenType)) return found + 1;
+      at = found - 1;
+    }
+  }
+
+  var startToken = "{", endToken = "}", startCh = findOpening("{");
+  if (startCh == null) {
+    startToken = "[", endToken = "]";
+    startCh = findOpening("[");
+  }
+
+  if (startCh == null) return;
+  var count = 1, lastLine = cm.lastLine(), end, endCh;
+  outer: for (var i = line; i <= lastLine; ++i) {
+    var text = cm.getLine(i), pos = i == line ? startCh : 0;
+    for (;;) {
+      var nextOpen = text.indexOf(startToken, pos), nextClose = text.indexOf(endToken, pos);
+      if (nextOpen < 0) nextOpen = text.length;
+      if (nextClose < 0) nextClose = text.length;
+      pos = Math.min(nextOpen, nextClose);
+      if (pos == text.length) break;
+      if (cm.getTokenTypeAt(CodeMirror.Pos(i, pos + 1)) == tokenType) {
+        if (pos == nextOpen) ++count;
+        else if (!--count) { end = i; endCh = pos; break outer; }
+      }
+      ++pos;
+    }
+  }
+  if (end == null || line == end && endCh == startCh) return;
+  return {from: CodeMirror.Pos(line, startCh),
+          to: CodeMirror.Pos(end, endCh)};
+});
+
+CodeMirror.registerHelper("fold", "import", function(cm, start) {
+  function hasImport(line) {
+    if (line < cm.firstLine() || line > cm.lastLine()) return null;
+    var start = cm.getTokenAt(CodeMirror.Pos(line, 1));
+    if (!/\S/.test(start.string)) start = cm.getTokenAt(CodeMirror.Pos(line, start.end + 1));
+    if (start.type != "keyword" || start.string != "import") return null;
+    // Now find closing semicolon, return its position
+    for (var i = line, e = Math.min(cm.lastLine(), line + 10); i <= e; ++i) {
+      var text = cm.getLine(i), semi = text.indexOf(";");
+      if (semi != -1) return {startCh: start.end, end: CodeMirror.Pos(i, semi)};
+    }
+  }
+
+  var start = start.line, has = hasImport(start), prev;
+  if (!has || hasImport(start - 1) || ((prev = hasImport(start - 2)) && prev.end.line == start - 1))
+    return null;
+  for (var end = has.end;;) {
+    var next = hasImport(end.line + 1);
+    if (next == null) break;
+    end = next.end;
+  }
+  return {from: cm.clipPos(CodeMirror.Pos(start, has.startCh + 1)), to: end};
+});
+
+CodeMirror.registerHelper("fold", "include", function(cm, start) {
+  function hasInclude(line) {
+    if (line < cm.firstLine() || line > cm.lastLine()) return null;
+    var start = cm.getTokenAt(CodeMirror.Pos(line, 1));
+    if (!/\S/.test(start.string)) start = cm.getTokenAt(CodeMirror.Pos(line, start.end + 1));
+    if (start.type == "meta" && start.string.slice(0, 8) == "#include") return start.start + 8;
+  }
+
+  var start = start.line, has = hasInclude(start);
+  if (has == null || hasInclude(start - 1) != null) return null;
+  for (var end = start;;) {
+    var next = hasInclude(end + 1);
+    if (next == null) break;
+    ++end;
+  }
+  return {from: CodeMirror.Pos(start, has + 1),
+          to: cm.clipPos(CodeMirror.Pos(end))};
+});
+
+});
+
+},{"../../lib/codemirror":17}],13:[function(require,module,exports){
+// CodeMirror, copyright (c) by Marijn Haverbeke and others
+// Distributed under an MIT license: http://codemirror.net/LICENSE
+
+(function(mod) {
+  if (typeof exports == "object" && typeof module == "object") // CommonJS
+    mod(require("../../lib/codemirror"));
+  else if (typeof define == "function" && define.amd) // AMD
+    define(["../../lib/codemirror"], mod);
+  else // Plain browser env
+    mod(CodeMirror);
+})(function(CodeMirror) {
+"use strict";
+
+CodeMirror.registerGlobalHelper("fold", "comment", function(mode) {
+  return mode.blockCommentStart && mode.blockCommentEnd;
+}, function(cm, start) {
+  var mode = cm.getModeAt(start), startToken = mode.blockCommentStart, endToken = mode.blockCommentEnd;
+  if (!startToken || !endToken) return;
+  var line = start.line, lineText = cm.getLine(line);
+
+  var startCh;
+  for (var at = start.ch, pass = 0;;) {
+    var found = at <= 0 ? -1 : lineText.lastIndexOf(startToken, at - 1);
+    if (found == -1) {
+      if (pass == 1) return;
+      pass = 1;
+      at = lineText.length;
+      continue;
+    }
+    if (pass == 1 && found < start.ch) return;
+    if (/comment/.test(cm.getTokenTypeAt(CodeMirror.Pos(line, found + 1)))) {
+      startCh = found + startToken.length;
+      break;
+    }
+    at = found - 1;
+  }
+
+  var depth = 1, lastLine = cm.lastLine(), end, endCh;
+  outer: for (var i = line; i <= lastLine; ++i) {
+    var text = cm.getLine(i), pos = i == line ? startCh : 0;
+    for (;;) {
+      var nextOpen = text.indexOf(startToken, pos), nextClose = text.indexOf(endToken, pos);
+      if (nextOpen < 0) nextOpen = text.length;
+      if (nextClose < 0) nextClose = text.length;
+      pos = Math.min(nextOpen, nextClose);
+      if (pos == text.length) break;
+      if (pos == nextOpen) ++depth;
+      else if (!--depth) { end = i; endCh = pos; break outer; }
+      ++pos;
+    }
+  }
+  if (end == null || line == end && endCh == startCh) return;
+  return {from: CodeMirror.Pos(line, startCh),
+          to: CodeMirror.Pos(end, endCh)};
+});
+
+});
+
+},{"../../lib/codemirror":17}],14:[function(require,module,exports){
+// CodeMirror, copyright (c) by Marijn Haverbeke and others
+// Distributed under an MIT license: http://codemirror.net/LICENSE
+
+(function(mod) {
+  if (typeof exports == "object" && typeof module == "object") // CommonJS
+    mod(require("../../lib/codemirror"));
+  else if (typeof define == "function" && define.amd) // AMD
+    define(["../../lib/codemirror"], mod);
+  else // Plain browser env
+    mod(CodeMirror);
+})(function(CodeMirror) {
+  "use strict";
+
+  function doFold(cm, pos, options, force) {
+    if (options && options.call) {
+      var finder = options;
+      options = null;
+    } else {
+      var finder = getOption(cm, options, "rangeFinder");
+    }
+    if (typeof pos == "number") pos = CodeMirror.Pos(pos, 0);
+    var minSize = getOption(cm, options, "minFoldSize");
+
+    function getRange(allowFolded) {
+      var range = finder(cm, pos);
+      if (!range || range.to.line - range.from.line < minSize) return null;
+      var marks = cm.findMarksAt(range.from);
+      for (var i = 0; i < marks.length; ++i) {
+        if (marks[i].__isFold && force !== "fold") {
+          if (!allowFolded) return null;
+          range.cleared = true;
+          marks[i].clear();
+        }
+      }
+      return range;
+    }
+
+    var range = getRange(true);
+    if (getOption(cm, options, "scanUp")) while (!range && pos.line > cm.firstLine()) {
+      pos = CodeMirror.Pos(pos.line - 1, 0);
+      range = getRange(false);
+    }
+    if (!range || range.cleared || force === "unfold") return;
+
+    var myWidget = makeWidget(cm, options);
+    CodeMirror.on(myWidget, "mousedown", function(e) {
+      myRange.clear();
+      CodeMirror.e_preventDefault(e);
+    });
+    var myRange = cm.markText(range.from, range.to, {
+      replacedWith: myWidget,
+      clearOnEnter: true,
+      __isFold: true
+    });
+    myRange.on("clear", function(from, to) {
+      CodeMirror.signal(cm, "unfold", cm, from, to);
+    });
+    CodeMirror.signal(cm, "fold", cm, range.from, range.to);
+  }
+
+  function makeWidget(cm, options) {
+    var widget = getOption(cm, options, "widget");
+    if (typeof widget == "string") {
+      var text = document.createTextNode(widget);
+      widget = document.createElement("span");
+      widget.appendChild(text);
+      widget.className = "CodeMirror-foldmarker";
+    }
+    return widget;
+  }
+
+  // Clumsy backwards-compatible interface
+  CodeMirror.newFoldFunction = function(rangeFinder, widget) {
+    return function(cm, pos) { doFold(cm, pos, {rangeFinder: rangeFinder, widget: widget}); };
+  };
+
+  // New-style interface
+  CodeMirror.defineExtension("foldCode", function(pos, options, force) {
+    doFold(this, pos, options, force);
+  });
+
+  CodeMirror.defineExtension("isFolded", function(pos) {
+    var marks = this.findMarksAt(pos);
+    for (var i = 0; i < marks.length; ++i)
+      if (marks[i].__isFold) return true;
+  });
+
+  CodeMirror.commands.toggleFold = function(cm) {
+    cm.foldCode(cm.getCursor());
+  };
+  CodeMirror.commands.fold = function(cm) {
+    cm.foldCode(cm.getCursor(), null, "fold");
+  };
+  CodeMirror.commands.unfold = function(cm) {
+    cm.foldCode(cm.getCursor(), null, "unfold");
+  };
+  CodeMirror.commands.foldAll = function(cm) {
+    cm.operation(function() {
+      for (var i = cm.firstLine(), e = cm.lastLine(); i <= e; i++)
+        cm.foldCode(CodeMirror.Pos(i, 0), null, "fold");
+    });
+  };
+  CodeMirror.commands.unfoldAll = function(cm) {
+    cm.operation(function() {
+      for (var i = cm.firstLine(), e = cm.lastLine(); i <= e; i++)
+        cm.foldCode(CodeMirror.Pos(i, 0), null, "unfold");
+    });
+  };
+
+  CodeMirror.registerHelper("fold", "combine", function() {
+    var funcs = Array.prototype.slice.call(arguments, 0);
+    return function(cm, start) {
+      for (var i = 0; i < funcs.length; ++i) {
+        var found = funcs[i](cm, start);
+        if (found) return found;
+      }
+    };
+  });
+
+  CodeMirror.registerHelper("fold", "auto", function(cm, start) {
+    var helpers = cm.getHelpers(start, "fold");
+    for (var i = 0; i < helpers.length; i++) {
+      var cur = helpers[i](cm, start);
+      if (cur) return cur;
+    }
+  });
+
+  var defaultOptions = {
+    rangeFinder: CodeMirror.fold.auto,
+    widget: "\u2194",
+    minFoldSize: 0,
+    scanUp: false
+  };
+
+  CodeMirror.defineOption("foldOptions", null);
+
+  function getOption(cm, options, name) {
+    if (options && options[name] !== undefined)
+      return options[name];
+    var editorOptions = cm.options.foldOptions;
+    if (editorOptions && editorOptions[name] !== undefined)
+      return editorOptions[name];
+    return defaultOptions[name];
+  }
+});
+
+},{"../../lib/codemirror":17}],15:[function(require,module,exports){
+// CodeMirror, copyright (c) by Marijn Haverbeke and others
+// Distributed under an MIT license: http://codemirror.net/LICENSE
+
+(function(mod) {
+  if (typeof exports == "object" && typeof module == "object") // CommonJS
+    mod(require("../../lib/codemirror"), require("./foldcode"));
+  else if (typeof define == "function" && define.amd) // AMD
+    define(["../../lib/codemirror", "./foldcode"], mod);
+  else // Plain browser env
+    mod(CodeMirror);
+})(function(CodeMirror) {
+  "use strict";
+
+  CodeMirror.defineOption("foldGutter", false, function(cm, val, old) {
+    if (old && old != CodeMirror.Init) {
+      cm.clearGutter(cm.state.foldGutter.options.gutter);
+      cm.state.foldGutter = null;
+      cm.off("gutterClick", onGutterClick);
+      cm.off("change", onChange);
+      cm.off("viewportChange", onViewportChange);
+      cm.off("fold", onFold);
+      cm.off("unfold", onFold);
+      cm.off("swapDoc", updateInViewport);
+    }
+    if (val) {
+      cm.state.foldGutter = new State(parseOptions(val));
+      updateInViewport(cm);
+      cm.on("gutterClick", onGutterClick);
+      cm.on("change", onChange);
+      cm.on("viewportChange", onViewportChange);
+      cm.on("fold", onFold);
+      cm.on("unfold", onFold);
+      cm.on("swapDoc", updateInViewport);
+    }
+  });
+
+  var Pos = CodeMirror.Pos;
+
+  function State(options) {
+    this.options = options;
+    this.from = this.to = 0;
+  }
+
+  function parseOptions(opts) {
+    if (opts === true) opts = {};
+    if (opts.gutter == null) opts.gutter = "CodeMirror-foldgutter";
+    if (opts.indicatorOpen == null) opts.indicatorOpen = "CodeMirror-foldgutter-open";
+    if (opts.indicatorFolded == null) opts.indicatorFolded = "CodeMirror-foldgutter-folded";
+    return opts;
+  }
+
+  function isFolded(cm, line) {
+    var marks = cm.findMarksAt(Pos(line));
+    for (var i = 0; i < marks.length; ++i)
+      if (marks[i].__isFold && marks[i].find().from.line == line) return true;
+  }
+
+  function marker(spec) {
+    if (typeof spec == "string") {
+      var elt = document.createElement("div");
+      elt.className = spec;
+      return elt;
+    } else {
+      return spec.cloneNode(true);
+    }
+  }
+
+  function updateFoldInfo(cm, from, to) {
+    var opts = cm.state.foldGutter.options, cur = from;
+    cm.eachLine(from, to, function(line) {
+      var mark = null;
+      if (isFolded(cm, cur)) {
+        mark = marker(opts.indicatorFolded);
+      } else {
+        var pos = Pos(cur, 0), func = opts.rangeFinder || CodeMirror.fold.auto;
+        var range = func && func(cm, pos);
+        if (range && range.from.line + 1 < range.to.line)
+          mark = marker(opts.indicatorOpen);
+      }
+      cm.setGutterMarker(line, opts.gutter, mark);
+      ++cur;
+    });
+  }
+
+  function updateInViewport(cm) {
+    var vp = cm.getViewport(), state = cm.state.foldGutter;
+    if (!state) return;
+    cm.operation(function() {
+      updateFoldInfo(cm, vp.from, vp.to);
+    });
+    state.from = vp.from; state.to = vp.to;
+  }
+
+  function onGutterClick(cm, line, gutter) {
+    var opts = cm.state.foldGutter.options;
+    if (gutter != opts.gutter) return;
+    cm.foldCode(Pos(line, 0), opts.rangeFinder);
+  }
+
+  function onChange(cm) {
+    var state = cm.state.foldGutter, opts = cm.state.foldGutter.options;
+    state.from = state.to = 0;
+    clearTimeout(state.changeUpdate);
+    state.changeUpdate = setTimeout(function() { updateInViewport(cm); }, opts.foldOnChangeTimeSpan || 600);
+  }
+
+  function onViewportChange(cm) {
+    var state = cm.state.foldGutter, opts = cm.state.foldGutter.options;
+    clearTimeout(state.changeUpdate);
+    state.changeUpdate = setTimeout(function() {
+      var vp = cm.getViewport();
+      if (state.from == state.to || vp.from - state.to > 20 || state.from - vp.to > 20) {
+        updateInViewport(cm);
+      } else {
+        cm.operation(function() {
+          if (vp.from < state.from) {
+            updateFoldInfo(cm, vp.from, state.from);
+            state.from = vp.from;
+          }
+          if (vp.to > state.to) {
+            updateFoldInfo(cm, state.to, vp.to);
+            state.to = vp.to;
+          }
+        });
+      }
+    }, opts.updateViewportTimeSpan || 400);
+  }
+
+  function onFold(cm, from) {
+    var state = cm.state.foldGutter, line = from.line;
+    if (line >= state.from && line < state.to)
+      updateFoldInfo(cm, line, line + 1);
+  }
+});
+
+},{"../../lib/codemirror":17,"./foldcode":14}],16:[function(require,module,exports){
+// CodeMirror, copyright (c) by Marijn Haverbeke and others
+// Distributed under an MIT license: http://codemirror.net/LICENSE
+
+(function(mod) {
+  if (typeof exports == "object" && typeof module == "object") // CommonJS
+    mod(require("../../lib/codemirror"));
+  else if (typeof define == "function" && define.amd) // AMD
+    define(["../../lib/codemirror"], mod);
+  else // Plain browser env
+    mod(CodeMirror);
+})(function(CodeMirror) {
+"use strict";
+
+CodeMirror.registerHelper("fold", "indent", function(cm, start) {
+  var tabSize = cm.getOption("tabSize"), firstLine = cm.getLine(start.line);
+  if (!/\S/.test(firstLine)) return;
+  var getIndent = function(line) {
+    return CodeMirror.countColumn(line, null, tabSize);
+  };
+  var myIndent = getIndent(firstLine);
+  var lastLineInFold = null;
+  // Go through lines until we find a line that definitely doesn't belong in
+  // the block we're folding, or to the end.
+  for (var i = start.line + 1, end = cm.lastLine(); i <= end; ++i) {
+    var curLine = cm.getLine(i);
+    var curIndent = getIndent(curLine);
+    if (curIndent > myIndent) {
+      // Lines with a greater indent are considered part of the block.
+      lastLineInFold = i;
+    } else if (!/\S/.test(curLine)) {
+      // Empty lines might be breaks within the block we're trying to fold.
+    } else {
+      // A non-empty line at an indent equal to or less than ours marks the
+      // start of another block.
+      break;
+    }
+  }
+  if (lastLineInFold) return {
+    from: CodeMirror.Pos(start.line, firstLine.length),
+    to: CodeMirror.Pos(lastLineInFold, cm.getLine(lastLineInFold).length)
+  };
+});
+
+});
+
+},{"../../lib/codemirror":17}],17:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
@@ -9174,7 +9678,7 @@ module.exports = require('./lib/classie');
   return CodeMirror;
 });
 
-},{}],13:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
@@ -9893,7 +10397,7 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
 
 });
 
-},{"../../lib/codemirror":12}],14:[function(require,module,exports){
+},{"../../lib/codemirror":17}],19:[function(require,module,exports){
 /*
  * domhelper
  * http://github.com/yawetse/domhelper
@@ -9903,7 +10407,7 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
 
 module.exports = require('./lib/domhelper');
 
-},{"./lib/domhelper":15}],15:[function(require,module,exports){
+},{"./lib/domhelper":20}],20:[function(require,module,exports){
 /*
  * linotype
  * https://github.com/typesettin/linotype
@@ -10243,7 +10747,7 @@ module.exports = domhelper;
 if ( typeof window === "object" && typeof window.document === "object" ) {
 	window.domhelper = domhelper;
 }
-},{"classie":9}],16:[function(require,module,exports){
+},{"classie":9}],21:[function(require,module,exports){
 /*
  * platter
  * http://github.com/typesettin/platter
@@ -10253,7 +10757,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 
 module.exports = require('./lib/platter');
 
-},{"./lib/platter":17}],17:[function(require,module,exports){
+},{"./lib/platter":22}],22:[function(require,module,exports){
 /*
  * manuscript
  * http://github.com/typesettin/platter
@@ -10556,7 +11060,7 @@ module.exports = platter;
 if ( typeof window === "object" && typeof window.document === "object" ) {
 	window.platter = platter;
 }
-},{"classie":9,"domhelper":14,"events":3,"util":8,"util-extend":18}],18:[function(require,module,exports){
+},{"classie":9,"domhelper":19,"events":3,"util":8,"util-extend":23}],23:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a

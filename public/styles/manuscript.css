@@ -372,6 +372,7 @@ body {
   padding: 0;
   background: #efefef;
   overflow: hidden;
+  font-family: monospace, "times new roman", serif;
 }
 #_mss_menu {
   background: rgba(0, 0, 0, 0.9);
@@ -441,13 +442,26 @@ body {
   background: #fff;
 }
 #_mss_document_iframe {
-  border: none;
+  border: 1px solid #fff;
+  margin: auto;
+}
+#_mss_document {
+  text-align: center;
 }
 #_mss_panels {
   display: none;
 }
 #_pltr-elementsContainer ._mss-panel h3 {
   margin: 0.1em 0.1em 0.3em;
+}
+#_pltr-elementsContainer ._mss-panel form._mss_panel-form {
+  padding: 1em 3em;
+}
+#_pltr-elementsContainer ._mss-panel form._mss_panel-form ._mss-form-xl {
+  width: 14em;
+}
+#_pltr-elementsContainer ._mss-panel form._mss_panel-form ._mss-form-md {
+  width: 5em;
 }
 
 #_pltrContainer {

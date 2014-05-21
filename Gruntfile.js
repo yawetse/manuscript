@@ -73,6 +73,17 @@ module.exports = function(grunt) {
         }
       }
     },
+    uglify: {
+      my_target: {
+        options: {
+          sourceMap: true,
+          sourceMapName: 'public/scripts/index-sourcemap.map'
+        },
+        files: {
+          'public/scripts/index.min.js': ['public/scripts/index.js']
+        }
+      }
+    },
     less: {
       development: {
         options: {
@@ -81,6 +92,13 @@ module.exports = function(grunt) {
         },
         files: {
           "public/styles/manuscript.css": ['client/stylesheets/**/*.less'],
+        }
+      }
+    },
+    cssmin: {
+      combine: {
+        files: {
+          'public/styles/manuscript.min.css': ['public/styles/manuscript.css']
         }
       }
     },
@@ -113,8 +131,10 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-browserify');
   grunt.loadNpmTasks('grunt-contrib-less');
   grunt.loadNpmTasks('grunt-jsdoc');
+  grunt.loadNpmTasks('grunt-contrib-uglify');
+  grunt.loadNpmTasks('grunt-contrib-cssmin');
 
-  grunt.registerTask('default', ['jshint', 'simplemocha']);
+  grunt.registerTask('default', ['lint','browserify','doc','cssmin','uglify', 'test','less']);
   grunt.registerTask('lint', 'jshint');
   grunt.registerTask('doc','jsdoc');
   grunt.registerTask('test', 'simplemocha');

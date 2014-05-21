@@ -33,24 +33,26 @@
 	<div id="_mss_panels">
 		<div id="_mss_panel-info" class="_mss-panel">
 			<h3>Information</h3>
-			<form>
+			<form class="_mss_panel-form">
 				<div class="form-section">
 					<label>File Name</label>
-					<input type="text" name="lname">
+					<input type="text" name="_mss_panel-info-filename" id="_mss_panel-info-filename" class="_mss-form-xl">
 				</div>
 				<div class="form-section">
 					<label>Screen Size</label>
-					<select>
+					<select name="_mss_panel-info-dimension-option" id="_mss_panel-info-dimension-option">
 						<option value="desktop">Desktop</option>
-						<option value="tablet">Tablet</option>
-						<option value="mobile">Mobile</option>
+						<option value="tablet-vert">Tablet (vertical)</option>
+						<option value="tablet-horz">Tablet (horizontal)</option>
+						<option value="mobile-vert">Mobile (vertical)</option>
+						<option value="mobile-horz">Mobile (horizontal)</option>
 						<option value="custom">Custom</option>
 					</select>
 				</div>
 				<div class="form-section">
 					<label>Dimensions</label>
-					<input type="text" name="lname" disabled="disabled">
-					<input type="text" name="lname" disabled="disabled">
+					<input type="text" name="_mss_panel-info-dimension-width" id="_mss_panel-info-dimension-width" value="100%" class="_mss-form-md"> x 
+					<input type="text" name="_mss_panel-info-dimension-height"id="_mss_panel-info-dimension-height" value="100%" class="_mss-form-md">
 				</div>
 			</form>
 		</div>
@@ -314,6 +316,9 @@ function hello(who) {
 			<h3>Styles (LESS mode)</h3>
 			<form>
 				<textarea id="_mss_panel_textarea_stylepanel" name="_mss_style_textarea">
+body{
+	background:#fff;
+}
 .btn {
   // reset here as of 2.0.3 due to Recess property order
   border-color: #ccc;

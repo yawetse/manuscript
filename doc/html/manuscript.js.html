@@ -39,7 +39,33 @@ var classie = require('classie'),
 	events = require('events'),
 	domhelper = require('domhelper'),
 	platter = require('platterjs'),
+	// codemirror = require('../node_modules/codemirror/lib/codemirror'),
+	CodeMirror = require('codemirror'),
+	less = require('less'),
+	ejs = require('ejs'),
+	path = require('path'),
 	util = require('util');
+
+	// ejsPreview.open ='{{';
+	// ejsPreview.close ='}}';
+
+	// require('csslint');
+	// require('jshint');
+	require('../node_modules/codemirror/addon/edit/matchbrackets');
+	require('../node_modules/codemirror/addon/comment/comment');
+	require('../node_modules/codemirror/addon/comment/continuecomment');
+	require('../node_modules/codemirror/addon/fold/foldcode');
+	require('../node_modules/codemirror/addon/fold/comment-fold');
+	require('../node_modules/codemirror/addon/fold/indent-fold');
+	require('../node_modules/codemirror/addon/fold/brace-fold');
+	require('../node_modules/codemirror/addon/fold/foldgutter');
+	// require('../node_modules/codemirror/addon/lint/lint');
+	// require('../node_modules/codemirror/addon/lint/javascript-lint');
+	// require('../node_modules/codemirror/addon/lint/json-lint');
+	// require('../node_modules/codemirror/addon/lint/css-lint');
+	require('../node_modules/codemirror/mode/css/css');
+	require('../node_modules/codemirror/mode/htmlembedded/htmlembedded');
+	require('../node_modules/codemirror/mode/javascript/javascript');
 
 /**
  * A module that represents a manuscript.
@@ -58,36 +84,227 @@ var classie = require('classie'),
 var manuscript = function(config_options){
 	/** module default configuration */
 	var options,
-		linotypeElement,
 		defaults = {
 			'verticalCentered' : true
 		},
-		container;
+		container,
+		lessparser = new less.Parser({}),
+		documentiFrame = document.getElementById('_mss_document_iframe'),
+		documentMenu = document.getElementById('_mss_menu'),
+		styleEditor = CodeMirror.fromTextArea(document.getElementById("_mss_panel_textarea_stylepanel"), {
+			lineNumbers : true,
+		    lineWrapping: true,
+			matchBrackets : true,
+			mode: "text/x-less",
+			indentUnit: 4,
+			indentWithTabs: true,
+			lint: true,
+			gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+		    foldGutter: true
+		}),
+		templateEditor = CodeMirror.fromTextArea(document.getElementById("_mss_panel_textarea_templatepanel"), {
+			lineNumbers : true,
+		    lineWrapping: true,
+			matchBrackets : true,
+			mode: "application/x-ejs",
+			indentUnit: 4,
+			indentWithTabs: true,
+			// lint: true,
+			gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+		    foldGutter: true
+		}),
+		dataEditor = CodeMirror.fromTextArea(document.getElementById("_mss_panel_textarea_datapanel"), {
+			lineNumbers : true,
+		    lineWrapping: true,
+			matchBrackets : true,
+			autoCloseBrackets: true,
+			mode: "application/json",
+			indentUnit: 4,
+			indentWithTabs: true,
+			// lint: true,
+			gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+		    foldGutter: true
+		}),
+		platterTemplate = new platter({
+			idSelector : 'template',
+			platterContentElement: document.getElementById('_mss_panel-template')
+		}),
+		platterData = new platter({
+			idSelector : 'data',
+			platterContentElement: document.getElementById('_mss_panel-data')
+		}),
+		platterStyles = new platter({
+			idSelector : 'styles',
+			platterContentElement: document.getElementById('_mss_panel-style')
+		}),
+		platterInfoPanel = new platter({
+			idSelector : 'info',
+			platterContentElement: document.getElementById('_mss_panel-info')
+		});
 
 	//extend default options
 	options = extend( defaults,config_options );
 
-
-	/** The current scroll delay setting */
-	this.scrollDelay = function(){
-		return false;
-	};
-
 	/**
-	 * intialize a new linotype
+	 * intialize a new manuscript
 	 */
 	this.init = function(){
-		console.log('prev');
+		documentiFrame.style.height = window.innerHeight+"px";
+		documentiFrame.style.width = window.innerWidth+"px";
+
+		platterInfoPanel.init();
+		platterTemplate.init();
+		platterStyles.init();
+		platterData.init();
+		// platterAssets.init();
+
+		// window.platterStyles = platterStyles;
+		window.styleEditor = styleEditor;
+		this.updatePreview();
 	}.bind(this);
+
+	this.updatePreview = function(){
+		var lessdata = styleEditor.getValue(),
+			templateLayout,
+			outputTemplate,
+			previewOutput;
+		lessparser.parse(lessdata,function(error,rendered){
+			if(error){
+				console.log(error);
+			}
+			else{
+				templateLayout = templateEditor.getValue();
+				try{
+					outputTemplate = ejs.render(templateLayout, {
+						datapanel: dataEditor.getValue(),
+						csspanel: rendered.toCSS(),
+						open:"{{",
+						close:"}}"
+					});
+				}
+				catch(e){
+					console.log(e);
+				}
+				try{
+					previewOutput = ejs.render(outputTemplate);
+
+					// console.log(previewOutput);
+					documentiFrame.contentDocument.open();
+					documentiFrame.contentDocument.write(previewOutput);
+					documentiFrame.contentDocument.close();
+				}
+				catch(e){
+					console.log(e);
+				}
+			}
+		});
+	};
+
+	function styleWindowResizeEventHandler(e){
+		styleEditor.refresh();
+		styleEditor.setSize("auto","80%");
+	}
+	function templateWindowResizeEventHandler(e){
+		templateEditor.refresh();
+		templateEditor.setSize("auto","80%");
+	}
+	function dataWindowResizeEventHandler(e){
+		dataEditor.refresh();
+		dataEditor.setSize("auto","80%");
+	}
+	function addStyleSheetToChildWindow(platter,refreshType){
+		var t = setTimeout(function(){
+			var newstylesheet = document.createElement("link");
+			newstylesheet.setAttribute("type","text/css"); newstylesheet.setAttribute("href",path.dirname(window.location)+"/styles/manuscript.css"); newstylesheet.setAttribute("rel","stylesheet" );
+			platter.config().windowObjectReference.document.getElementsByTagName("head")[0].appendChild(newstylesheet);
+
+			switch(refreshType){
+				case 'style':
+					styleWindowResizeEventHandler();
+					break;
+				case 'template':
+					templateWindowResizeEventHandler();
+					break;
+				case 'data':
+					dataWindowResizeEventHandler();
+					break;
+			}
+			clearTimeout(t);
+		},200);
+
+		switch(refreshType){
+			case 'style':
+				platter.config().windowObjectReference.window.addEventListener("resize",styleWindowResizeEventHandler,false);
+				break;
+			case 'template':
+				platter.config().windowObjectReference.window.addEventListener("resize",templateWindowResizeEventHandler,false);
+				break;
+			case 'data':
+				platter.config().windowObjectReference.window.addEventListener("resize",dataWindowResizeEventHandler,false);
+				break;
+		}
+	}
+	function refreshAllStyleEditors(){
+		refreshStyleEditor();
+		refreshTemplateEditor();
+		refreshDataEditor();
+	}
+	function refreshStyleEditor(){
+		var t = setTimeout(function(){
+			styleEditor.refresh();
+			clearTimeout(t);
+		},100);
+	}
+	function refreshTemplateEditor(){
+		var t = setTimeout(function(){
+			templateEditor.refresh();
+			clearTimeout(t);
+		},100);
+	}
+	function refreshDataEditor(){
+		var t = setTimeout(function(){
+			dataEditor.refresh();
+			clearTimeout(t);
+		},100);
+	}
+
+	platterStyles.on("openedPlatterPane",function(data){
+		refreshAllStyleEditors();
+	});
+	platterStyles.on("openedPlatterWindow",function(data){
+		addStyleSheetToChildWindow(platterStyles,'style');
+	});
+	platterStyles.on("closedPlatterWindow",function(data){
+		refreshStyleEditor();
+	});
+	platterTemplate.on("openedPlatterPane",function(data){
+		refreshAllStyleEditors();
+	});
+	platterTemplate.on("openedPlatterWindow",function(data){
+		addStyleSheetToChildWindow(platterTemplate,'template');
+	});
+	platterTemplate.on("closedPlatterWindow",function(data){
+		refreshTemplateEditor();
+	});
+	platterData.on("openedPlatterPane",function(data){
+		refreshAllStyleEditors();
+	});
+	platterData.on("openedPlatterWindow",function(data){
+		addStyleSheetToChildWindow(platterData,'data');
+	});
+	platterData.on("closedPlatterWindow",function(data){
+		refreshDataEditor();
+	});
 };
 
 module.exports = manuscript;
 
 
 // If there is a window object, that at least has a document property,
-// define linotype
+// define module
 if ( typeof window === "object" && typeof window.document === "object" ) {
 	window.manuscript = manuscript;
+	// window.path = path;
 }</code></pre>
         </article>
     </section>
@@ -104,7 +321,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 <br clear="both">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.2</a> on Tue May 20 2014 18:48:37 GMT-0400 (EDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.2</a> on Wed May 21 2014 17:47:58 GMT-0400 (EDT)
 </footer>
 
 <script> prettyPrint(); </script>

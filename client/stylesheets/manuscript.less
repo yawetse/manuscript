@@ -75,6 +75,13 @@ body{
 #_mss_panels{
 	display: none;
 }
+#_pltr-elementsContainer{
+	._mss-panel{
+		h3{
+			margin: 0.1em 0.1em 0.3em;
+		}
+	}
+}
 .transition(@tprop){
 	-webkit-transition: @tprop;
 	-moz-transition: @tprop;
@@ -85,3 +92,4 @@ body{
 
 @import (inline) "../../node_modules/codemirror/lib/codemirror.css";
 @import (inline) "../../node_modules/codemirror/addon/fold/foldgutter.css";
+@import (inline) "../../node_modules/codemirror/addon/lint/lint.css";

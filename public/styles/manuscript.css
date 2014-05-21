@@ -1,5 +1,85 @@
+body {
+  margin: 0;
+  padding: 0;
+  background: #efefef;
+  overflow: hidden;
+}
+#_mss_menu {
+  background: rgba(0, 0, 0, 0.9);
+  position: fixed;
+  height: 0.5em;
+  opacity: 0.6;
+  width: 100%;
+  z-index: 1;
+  color: #fff;
+  overflow: hidden;
+  -webkit-transition: opacity 0.2s ease-in, height 0.2s ease-out;
+  -moz-transition: opacity 0.2s ease-in, height 0.2s ease-out;
+  -ms-transition: opacity 0.2s ease-in, height 0.2s ease-out;
+  -o-transition: opacity 0.2s ease-in, height 0.2s ease-out;
+  transition: opacity 0.2s ease-in, height 0.2s ease-out;
+}
+#_mss_menu:hover {
+  opacity: .9;
+  height: 2em;
+  overflow: visible;
+  -webkit-backface-visibility: hidden;
+}
+#_mss_menu ._mss-pull-left {
+  float: left;
+}
+#_mss_menu ._mss_menu-heading {
+  display: block;
+  height: 2em;
+  font-size: 160%;
+  /* line-height: 2em; */
+  font-weight: bold;
+  padding: 0 1em;
+}
+#_mss_menu ul._mss_menu-items {
+  display: block;
+  margin: 0;
+  padding: 0;
+  line-height: 2em;
+}
+#_mss_menu ul._mss_menu-items li {
+  padding: 0em 0.5em;
+  display: inline-block;
+  position: relative;
+}
+#_mss_menu ul._mss_menu-items li ._mss_menu-items-subnav {
+  position: absolute;
+  top: 2em;
+  left: 0em;
+  margin: 0;
+  padding: 0em;
+  display: none;
+}
+#_mss_menu ul._mss_menu-items li ._mss_menu-items-subnav li {
+  display: block;
+  min-width: 5em;
+  font-size: 75%;
+}
+#_mss_menu ul._mss_menu-items li ._mss_menu-items-subnav li:hover {
+  background: #ccc;
+}
+#_mss_menu ul._mss_menu-items li:hover {
+  background: #fff;
+  color: #000;
+}
+#_mss_menu ul._mss_menu-items li:hover ._mss_menu-items-subnav {
+  display: block;
+  background: #fff;
+}
+#_mss_document_iframe {
+  border: none;
+}
+#_mss_panels {
+  display: none;
+}
+
 #_pltrContainer {
-  background: rgba(239, 239, 239, 0.8);
+  background: rgba(0, 0, 0, 0.8);
   height: 2em;
   z-index: 2;
   width: 100%;
@@ -57,7 +137,7 @@
   position: fixed;
   width: 0%;
   height: 100%;
-  background: rgba(200, 200, 200, 0.6);
+  background: rgba(0, 0, 0, 0.6);
   overflow: auto;
   overflow-x: hidden;
   -webkit-transition: width 0.1s ease-out;
@@ -69,7 +149,6 @@
 #_pltrContainer #_pltr-elementsContainer._pltr-right {
   right: 0em;
   bottom: 0em;
-  border-left: .2em solid #efefef;
 }
 #_pltrContainer #_pltr-elementsContainer._pltr-right #_pltr-ecmc {
   right: 0;

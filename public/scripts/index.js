@@ -44,15 +44,15 @@ var classie = require('classie'),
 var manuscript = function(config_options){
 	/** module default configuration */
 	var options,
-		linotypeElement,
 		defaults = {
 			'verticalCentered' : true
 		},
-		container;
+		container,
+		documentiFrame = document.getElementById('_mss_document_iframe'),
+		documentMenu = document.getElementById('_mss_menu');
 
 	//extend default options
 	options = extend( defaults,config_options );
-
 
 	/** The current scroll delay setting */
 	this.scrollDelay = function(){
@@ -69,6 +69,9 @@ var manuscript = function(config_options){
 			platterStyles,
 			platterInfoPanel;
 
+		documentiFrame.style.height = window.innerHeight+"px";
+		documentiFrame.style.width = window.innerWidth+"px";
+
 		platterTemplate = new platter({
 			idSelector : 'template'
 		});
@@ -82,14 +85,15 @@ var manuscript = function(config_options){
 			idSelector : 'styles'
 		});
 		platterInfoPanel = new platter({
-			idSelector : 'info'
+			idSelector : 'info',
+			platterContentElement: document.getElementById('_mss_panel-info')
 		});
 
 		platterInfoPanel.init();
 		platterTemplate.init();
+		platterStyles.init();
 		platterData.init();
 		platterAssets.init();
-		platterStyles.init();
 
 		platterTemplate.on("intializedPlatter",function(data){
 			console.log("got event",data);
@@ -97,6 +101,10 @@ var manuscript = function(config_options){
 		});
 
 	}.bind(this);
+
+	function windowResizeEventHandler(e){
+
+	}
 };
 
 module.exports = manuscript;
@@ -255,10 +263,7 @@ EventEmitter.prototype.addListener = function(type, listener) {
                     'leak detected. %d listeners added. ' +
                     'Use emitter.setMaxListeners() to increase limit.',
                     this._events[type].length);
-      if (typeof console.trace === 'function') {
-        // not supported in IE 10
-        console.trace();
-      }
+      console.trace();
     }
   }
 

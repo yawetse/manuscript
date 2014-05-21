@@ -347,7 +347,16 @@ var manuscript = function(config_options){
 			clearTimeout(t);
 		},100);
 	}
+	var liveUpdatePreview = function(){
+		var t = setTimeout(function(){
+			this.updatePreview();
+			clearTimeout(t);
+		}.bind(this),1000);
+	}.bind(this);
 
+	templateEditor.on("change",liveUpdatePreview);
+	styleEditor.on("change",liveUpdatePreview);
+	dataEditor.on("change",liveUpdatePreview);
 	platterInfoPanel.on("openedPlatterPane",function(data){
 		refreshAllStyleEditors();
 	});

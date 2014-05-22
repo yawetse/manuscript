@@ -18,6 +18,17 @@
 					<ul class="_mss_menu-items-subnav">
 						<li>New</li>
 						<li>Save</li>
+						<li>Load</li>
+						<li id="_mss_export-mms-to-html">Export Manuscript HTML</li>
+					</ul>
+				</li>
+				<li>Sources
+					<ul class="_mss_menu-items-subnav">
+						<li>Add stylesheets</li>
+						<li>Add scripts</li>
+						<li>Add templates</li>
+						<li>Add data</li>
+						<li>Add modules</li>
 					</ul>
 				</li>
 				<li>Help</li>
@@ -36,14 +47,15 @@
 			<form class="_mss_panel-form">
 				<div class="form-section">
 					<label>File Name</label>
-					<input type="text" name="_mss_panel-info-filename" id="_mss_panel-info-filename" class="_mss-form-xl">
+					<input type="text" name="_mss_panel-info-filename" id="_mss_panel-info-filename" class="_mss-form-xl" value="draft">
 				</div>
 				<div class="form-section">
 					<label>Screen Size</label>
 					<select name="_mss_panel-info-dimension-option" id="_mss_panel-info-dimension-option">
+						<option value="max">Fill Window Size</option>
 						<option value="desktop">Desktop</option>
 						<option value="tablet-vert">Tablet (vertical)</option>
-						<option value="tablet-horz">Tablet (horizontal)</option>
+						<option selected="selected" value="tablet-horz">Tablet (horizontal)</option>
 						<option value="mobile-vert">Mobile (vertical)</option>
 						<option value="mobile-horz">Mobile (horizontal)</option>
 						<option value="custom">Custom</option>

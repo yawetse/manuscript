@@ -23,7 +23,8 @@
     "codemirror": "~4.2.0",
     "csslint": "^0.10.0",
     "jshint": "^2.5.1",
-    "less": "^1.7.0"
+    "less": "^1.7.0",
+    "filesaver.js": "~2013.1.23"
   },
   "devDependencies": {
     "chai": "1.5.0",

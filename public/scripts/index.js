@@ -555,7 +555,7 @@ var ribbon = function(config_options,ribbon_message,show,timed,callback){
 			this.createRibbon(options.idSelector);
 			this.emit("intializedRibbon",true);
 			if(show){
-				this.showRibbon(ribbon_message,timed,callback);
+				this.showRibbon(ribbon_message,timed,options.type,callback);
 			}
 		}
 		else{
@@ -563,8 +563,10 @@ var ribbon = function(config_options,ribbon_message,show,timed,callback){
 		}
 	}.bind(this);
 
-	this.setRibbonMessage = function(msg){
+	this.setRibbonMessage = function(msg,hideDismiss){
+		var hideDismissText = (hideDismiss) ? '':' <span class="_rb_small _rb-hide-ribbon">(dismiss)</span>';
 		options.message = msg;
+		options.element.innerHTML = options.message + hideDismissText;
 	};
 
 	/**
@@ -611,38 +613,72 @@ var ribbon = function(config_options,ribbon_message,show,timed,callback){
 	};
 
 	/** show platter in bar */
-	this.showRibbon = function(msg,timed,type,callback){
-		console.log("msg",msg,"timed",timed,"type",type,"callback",callback);
-		switch(type){
-			case "error":
-				classie.removeClass(options.element,'_mms_ribbon-type-info');
-				classie.addClass(options.element,'_mms_ribbon-type-error');
-				break;
-			default:
-				classie.addClass(options.element,'_mms_ribbon-type-info');
-				classie.removeClass(options.element,'_mms_ribbon-type-error');
-				break;
+	this.showRibbon = function(msg,timed,type,hideDismiss,callback){
+		// console.log("msg",msg,"timed",timed,"type",type,"callback",callback);
+		if(hideDismiss === true && timed < 500 || timed > 20000){
+			timed = 5000;
 		}
+		if(msg){
+			var ribbonstyle = (type) ? type : options.type;
+			switch(type){
+				case "warn":
+					classie.addClass(options.element,'_mms_ribbon-type-warn');
+					classie.removeClass(options.element,'_mms_ribbon-type-error');
+					classie.removeClass(options.element,'_mms_ribbon-type-success');
+					classie.removeClass(options.element,'_mms_ribbon-type-info');
+					classie.removeClass(options.element,'_mms_ribbon-type-default');
+					break;
+				case "success":
+					classie.addClass(options.element,'_mms_ribbon-type-success');
+					classie.removeClass(options.element,'_mms_ribbon-type-warn');
+					classie.removeClass(options.element,'_mms_ribbon-type-error');
+					classie.removeClass(options.element,'_mms_ribbon-type-info');
+					classie.removeClass(options.element,'_mms_ribbon-type-default');
+					break;
+				case "info":
+					classie.addClass(options.element,'_mms_ribbon-type-info');
+					classie.removeClass(options.element,'_mms_ribbon-type-warn');
+					classie.removeClass(options.element,'_mms_ribbon-type-success');
+					classie.removeClass(options.element,'_mms_ribbon-type-error');
+					classie.removeClass(options.element,'_mms_ribbon-type-default');
+					break;
+				case "error":
+					classie.addClass(options.element,'_mms_ribbon-type-error');
+					classie.removeClass(options.element,'_mms_ribbon-type-warn');
+					classie.removeClass(options.element,'_mms_ribbon-type-success');
+					classie.removeClass(options.element,'_mms_ribbon-type-info');
+					classie.removeClass(options.element,'_mms_ribbon-type-default');
+					break;
+				default:
+					classie.addClass(options.element,'_mms_ribbon-type-default');
+					classie.removeClass(options.element,'_mms_ribbon-type-error');
+					classie.removeClass(options.element,'_mms_ribbon-type-warn');
+					classie.removeClass(options.element,'_mms_ribbon-type-success');
+					classie.removeClass(options.element,'_mms_ribbon-type-info');
+					break;
+			}
+			this.setRibbonMessage(msg,hideDismiss);
 
-		classie.addClass(options.parentElement,'_mss-ribbon-active');
-		classie.removeClass(options.element,'future');
-
-		options.message = msg;
-		if(timed){
-			var t = setTimeout(function(){
-				clearTimeout(t);
-				this.hideRibbon();
-				callCallBack(callback);
-			}.bind(this),timed);
+			classie.addClass(options.parentElement,'_mss-ribbon-active');
+			var y = setTimeout(function(){
+				classie.removeClass(options.element,'future');
+				if(timed){
+					var t = setTimeout(function(){
+						clearTimeout(t);
+						this.hideRibbon();
+						callCallBack(callback);
+					}.bind(this),timed);
+				}
+				else{
+					callCallBack(callback);
+				}
+			}.bind(this),100);
 		}
-		else{
-			callCallBack(callback);
-		}
-	};
+	}.bind(this);
 
 	var ribbonClickEventHandler = function(e){
 		var etarget = e.target;
-		if(classie.hasClass(etarget,'_mss-hide-ribbon')){
+		if(classie.hasClass(etarget,'_rb-hide-ribbon')){
 			this.hideRibbon();
 		}
 	}.bind(this);

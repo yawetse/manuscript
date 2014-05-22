@@ -379,9 +379,10 @@ header {
   margin: 0;
   padding: 0;
   height: 0em;
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(0, 0, 0, 0.8);
   display: block;
   width: 100%;
+  top: 0;
 }
 header #_mss_menu {
   background: rgba(0, 0, 0, 0.9);
@@ -392,11 +393,11 @@ header #_mss_menu {
   z-index: 1;
   color: #fff;
   overflow: hidden;
-  -webkit-transition: opacity 0.2s ease-in, height 0.2s ease-out, top 0.2s ease-out;
-  -moz-transition: opacity 0.2s ease-in, height 0.2s ease-out, top 0.2s ease-out;
-  -ms-transition: opacity 0.2s ease-in, height 0.2s ease-out, top 0.2s ease-out;
-  -o-transition: opacity 0.2s ease-in, height 0.2s ease-out, top 0.2s ease-out;
-  transition: opacity 0.2s ease-in, height 0.2s ease-out, top 0.2s ease-out;
+  -webkit-transition: opacity 0.2s ease-in, height 0.2s ease-out;
+  -moz-transition: opacity 0.2s ease-in, height 0.2s ease-out;
+  -ms-transition: opacity 0.2s ease-in, height 0.2s ease-out;
+  -o-transition: opacity 0.2s ease-in, height 0.2s ease-out;
+  transition: opacity 0.2s ease-in, height 0.2s ease-out;
 }
 header #_mss_menu:hover {
   opacity: .9;
@@ -614,7 +615,7 @@ header._mss-ribbon-active #_mss_menu {
   -o-perspective-origin: 50% 50%;
   perspective-origin: 50% 50%;
 }
-._mms_ribbon-element-wrapper ._mms_ribbon-element {
+._mms_ribbon-element-wrapper div._mms_ribbon-element {
   display: none;
   line-height: 2em;
   padding: 0 2em;
@@ -626,11 +627,27 @@ header._mss-ribbon-active #_mss_menu {
   -o-transform: translateZ(0px);
   transform: translateZ(0px);
 }
-._mms_ribbon-element-wrapper ._mms_ribbon-element._mms_ribbon-type-error {
+._mms_ribbon-element-wrapper div._mms_ribbon-element._mms_ribbon-type-warn {
+  background: #fcd04b;
+  color: #fff;
+}
+._mms_ribbon-element-wrapper div._mms_ribbon-element._mms_ribbon-type-error {
   background: #e74c3c;
   color: #fff;
 }
-._mms_ribbon-element-wrapper ._mms_ribbon-element.cards {
+._mms_ribbon-element-wrapper div._mms_ribbon-element._mms_ribbon-type-success {
+  background: #2ac56c;
+  color: #ffffff;
+}
+._mms_ribbon-element-wrapper div._mms_ribbon-element._mms_ribbon-type-info {
+  background: #4593e3;
+  color: #ffffff;
+}
+._mms_ribbon-element-wrapper div._mms_ribbon-element._mms_ribbon-type-default {
+  background: #000;
+  color: #ffffff;
+}
+._mms_ribbon-element-wrapper div._mms_ribbon-element.cards {
   -webkit-transition: all 600ms ease;
   -moz-transition: all 600ms ease;
   -ms-transition: all 600ms ease;
@@ -642,14 +659,14 @@ header._mss-ribbon-active #_mss_menu {
   -o-transform-origin: 100% 50%;
   transform-origin: 100% 50%;
 }
-._mms_ribbon-element-wrapper ._mms_ribbon-element.cards.past {
+._mms_ribbon-element-wrapper div._mms_ribbon-element.cards.past {
   -webkit-transform: translate3d(0, -100px, -100px) rotateX(-90deg);
   -moz-transform: translate3d(0, -100px, -100px) rotateX(-90deg);
   -ms-transform: translate3d(0, -100px, -100px) rotateX(-90deg);
   -o-transform: translate3d(0, -100px, -100px) rotateX(-90deg);
   transform: translate3d(0, -100px, -100px) rotateX(-90deg);
 }
-._mms_ribbon-element-wrapper ._mms_ribbon-element.cards.future {
+._mms_ribbon-element-wrapper div._mms_ribbon-element.cards.future {
   -webkit-transform: translate3d(0, 100px, -100px) rotateX(90deg);
   -moz-transform: translate3d(0, 100px, -100px) rotateX(90deg);
   -ms-transform: translate3d(0, 100px, -100px) rotateX(90deg);

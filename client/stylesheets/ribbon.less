@@ -19,7 +19,7 @@
 	    -ms-perspective-origin: 50% 50%;
 	     -o-perspective-origin: 50% 50%;
 	        perspective-origin: 50% 50%;
-	._mms_ribbon-element{
+	div._mms_ribbon-element{
 		display:none;
 		line-height: 2em;
 		padding: 0 2em;
@@ -33,9 +33,25 @@
         -o-transform: translateZ(0px);
         transform: translateZ(0px); 
 
+		&._mms_ribbon-type-warn{
+        	background: #fcd04b;
+        	color:#fff;
+        }
         &._mms_ribbon-type-error{
         	background: #e74c3c;
         	color:#fff;
+        }
+        &._mms_ribbon-type-success{
+        	background: #2ac56c;
+        	color: #ffffff;
+        }
+        &._mms_ribbon-type-info{
+        	background: #4593e3;
+        	color: #ffffff;
+        }
+        &._mms_ribbon-type-default{
+        	background: #000;
+        	color: #ffffff;
         }
 
         &.cards{

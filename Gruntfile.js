@@ -29,7 +29,7 @@ module.exports = function(grunt) {
     },
     simplemocha: {
       options: {
-        globals: ['should'],
+        globals: ['should','navigator'],
         timeout: 3000,
         ignoreLeaks: false,
         ui: 'bdd',
@@ -45,7 +45,6 @@ module.exports = function(grunt) {
       },
       all: [
         'Gruntfile.js',
-        // '!node_modules/codemirror/**/*.js',
         'config/**/*.js',
         'index.js',
         'lib/**/*.js',

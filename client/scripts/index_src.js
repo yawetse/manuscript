@@ -4,11 +4,13 @@ var manuscript = require('../../lib/manuscript'),
 	manuscriptapp = new manuscript({
 		idSelector : 'template'
 	});
-// manuscript.addOneMore = function(){
-// 	console.log("added plugin");
-// };
+
 window.onload = function(){
 	manuscriptapp.init();
 };
+
+manuscriptapp.on("intializedManuscript",function(data){
+	console.log("loaded manuscript",data);
+});
 
 window.manuscriptapp = manuscriptapp;

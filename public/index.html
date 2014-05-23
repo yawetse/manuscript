@@ -14,12 +14,12 @@
 		<div id="_mms_ribbon-element"> </div>
 		<div id="_mss_menu">
 			<a class="_mss_menu-heading _mss-pull-left">Manuscript</a>
-			<nav class="_mss_menu-nav _mss-pull-left">
+			<nav id="_mms-main-navigation" class="_mss_menu-nav _mss-pull-left">
 				<ul class="_mss_menu-items">
 					<li>File
 						<ul class="_mss_menu-items-subnav">
 							<li id="_mss_file-new">New</li>
-							<li>Save</li>
+							<li id="_mss_file-save">Save</li>
 							<li>Load</li>
 							<li id="_mss_export-mms-to-html">Export Manuscript HTML</li>
 						</ul>
@@ -55,7 +55,10 @@
 				<div class="form-section">
 					<label>File Type</label>
 					<select name="_mss_panel-info-type" id="_mss_panel-info-type" class="_mss-form-xl">
-						<option value="static">Static Flat File</option>
+						<option value="layout">Manuscript Page Layout</option>
+						<option value="module" disabled="disabled">Manuscript Module</option>
+						<option value="wordpress" disabled="disabled">Wordpress Page Layout</option>
+						<option value="periodic" disabled="disabled">Periodic Page Layout</option>
 					</select>
 				</div>
 				<div class="form-section">

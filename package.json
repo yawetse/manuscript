@@ -26,7 +26,8 @@
     "less": "^1.7.0",
     "filesaver.js": "~2013.1.23",
     "jszip": "~2.2.2",
-    "ribbonjs": "^0.1.2"
+    "ribbonjs": "^0.1.2",
+    "silkscreenjs": "~0.1.0"
   },
   "devDependencies": {
     "chai": "1.5.0",

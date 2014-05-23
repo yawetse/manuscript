@@ -178,14 +178,26 @@ var manuscript = function(config_options){
 
 	}.bind(this);
 
+	/**
+	 * updates save file info
+	 * @param {object} saveinfo - this is the new information you want to save with your manuscript
+	 */
 	this.updateSaveFile = function(saveinfo){
 		savefile = saveinfo;
 	};
 
+	/**
+	 * returns the filename from then info panel
+	 * @return {string} returns string of filename
+	 */
 	this.getFileName = function(){
 		return options.filename;
 	};
 
+	/**
+	 * get html of preview page
+	 * @return {string} html of preview pane
+	 */
 	this.getRenderedOutput = function(){
 		// console.log("in rend out");
 		var lessdata = styleEditor.getValue(),
@@ -223,10 +235,17 @@ var manuscript = function(config_options){
 		return previewOutput;
 	};
 
+	/**
+	 * returns current instance options object
+	 * @return {object} manuscript instance configuration object
+	 */
 	this.config = function(){
 		return options;
 	};
 
+	/**
+	 * updates html of preview pane
+	 */
 	this.updatePreview = function(){
 		var previewOutput = this.getRenderedOutput();
 		if(previewOutput){
@@ -236,6 +255,10 @@ var manuscript = function(config_options){
 		}
 	}.bind(this);
 
+	/**
+	 * adds listeners to update manuscript from panels
+	 * @param {boolean} childWindow - if true, update listeners to use child window otherwise pane on page
+	 */
 	this.addInfoPanelListeners = function(childWindow){
 		var info_dimension_width,
 			info_dimension_option,
@@ -263,17 +286,28 @@ var manuscript = function(config_options){
 			info_dimension_width.addEventListener("change",updatePreviewPaneSize, false);
 			info_dimension_height.addEventListener("change",updatePreviewPaneSize,false);
 		}
-
 	};
 
+	/**
+	 * interface for plugins to update instance object
+	 * @param {string} name - name of new instance object
+	 * @param {varied} value - value of new instance object variable, could be a function, object or anything
+	 */
 	this.modifyInstance = function(name,value){
 		this[name]=value;
 	};
 
+	/**
+	 * add event listeners for menu bar
+	 */
 	this.addMenuBarListeners = function(){
 		document.getElementById("_mms-main-navigation").addEventListener("click",navigationMenuClickEventHandler,false);
 	};
 
+	/**
+	 * event handler for click events on menu bar
+	 * @param {object} e - event object
+	 */
 	var navigationMenuClickEventHandler = function(e){
 		var etarget = e.target;
 		switch(etarget.id){
@@ -491,6 +525,11 @@ var manuscript = function(config_options){
 };
 util.inherits(manuscript,events.EventEmitter);
 
+/**
+ * save manuscript file, overwriteable for other save options like wordpress or periodic
+ * @static
+ * @param {object} obj - a way to pass the current manuscript instance object
+ */
 manuscript.saveManuscriptFile = function(obj){
 	ribbonNotification.showRibbon("Saving File",false,"info");
 	zip = new JSZip();
@@ -503,15 +542,21 @@ manuscript.saveManuscriptFile = function(obj){
 	var zipcontent = (JSZip.support.uint8array) ? zip.generate({type : "uint8array"}) : zip.generate({type : "string"});
 	var blob = new Blob([zipcontent], {type: "application/zip;charset=utf-8"});
 	saveAs(blob, obj.getFileName()+".zip");
-
+	ribbonNotification.hideRibbon();
 };
 
+/**
+ * downloads preview pane as flat html file
+ * @static
+ * @param {object} obj - a way to pass the current manuscript instance object
+ */
 manuscript.downloadRenderedOutput = function(obj){
 	var renderedOutput = obj.getRenderedOutput();
 	if(renderedOutput){
 		ribbonNotification.showRibbon("Rendered HTML Preview Ready",2000,"success");
 		var blob = new Blob([renderedOutput], {type: "text/html;charset=utf-8"});
 		saveAs(blob, obj.getFileName()+".html");
+		ribbonNotification.hideRibbon();
 	}
 };
 

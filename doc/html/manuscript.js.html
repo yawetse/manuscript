@@ -40,13 +40,17 @@ var classie = require('classie'),
 	domhelper = require('domhelper'),
 	platter = require('platterjs'),
 	ribbon = require('ribbonjs'),
+	silkscreen = require('silkscreenjs'),
 	CodeMirror = require('codemirror'),
 	less = require('less'),
 	saveAs = require('filesaver.js'),
+	JSZip = require('jszip'),
 	ejs = require('ejs'),
 	path = require('path'),
 	util = require('util'),
-	ribbonNotification = new ribbon({type:"info",idSelector:"#_mms_ribbon-element"});
+	silkscreenModal = new silkscreen(),
+	ribbonNotification = new ribbon({type:"info",idSelector:"#_mms_ribbon-element"}),
+	zip;
 
 	require('../node_modules/codemirror/addon/edit/matchbrackets');
 	require('../node_modules/codemirror/addon/comment/comment');
@@ -75,9 +79,7 @@ var classie = require('classie'),
  * @todo to do later
  */
 var manuscript = function(config_options){
-	console.log("TODO: modal module - https://github.com/yawetse/npmd-ui-modal/blob/master/example/example1.html");
-	console.log("TODO: add saving by zipping files and download: http://stuk.github.io/jszip/, use workers: https://developer.mozilla.org/en-US/docs/Web/Guide/Performance/Using_web_workers");
-	console.log("TODO: error pane, use stroller effects");
+	console.log("TODO: add saving by zipping files and download: http://stuk.github.io/jszip/, use workers: https://developer.mozilla.org/en-US/docs/Web/Guide/Performance/Using_web_workers (http://www.html5rocks.com/en/tutorials/file/dndfiles/)");
 	console.log("TODO: plugins --append scripts to bottom of body");
 	console.log("TODO: start empty, load files using web workers");
 	console.log("TODO: multiple scripts,styles,template includes");
@@ -181,20 +183,35 @@ var manuscript = function(config_options){
 
 	}.bind(this);
 
+	/**
+	 * updates save file info
+	 * @param {object} saveinfo - this is the new information you want to save with your manuscript
+	 */
+	this.updateSaveFile = function(saveinfo){
+		savefile = saveinfo;
+	};
 
+	/**
+	 * returns the filename from then info panel
+	 * @return {string} returns string of filename
+	 */
 	this.getFileName = function(){
 		return options.filename;
 	};
 
+	/**
+	 * get html of preview page
+	 * @return {string} html of preview pane
+	 */
 	this.getRenderedOutput = function(){
-		console.log("in rend out");
+		// console.log("in rend out");
 		var lessdata = styleEditor.getValue(),
 			templateLayout,
 			outputTemplate,
 			previewOutput = false;
 		lessparser.parse(lessdata,function(error,rendered){
 			if(error){
-				ribbonNotification.showRibbon("LESS css error: "+error,2000,"error");
+				ribbonNotification.showRibbon("LESS css error, line("+error.line+"): "+error.message,5000,"error");
 				console.log(error);
 			}
 			else{
@@ -208,14 +225,14 @@ var manuscript = function(config_options){
 					});
 				}
 				catch(e){
-					ribbonNotification.showRibbon("Template Error: "+error,2000,"error");
+					ribbonNotification.showRibbon("Template Error: "+e.message,5000,"error");
 					console.log(e);
 				}
 				try{
 					previewOutput = ejs.render(outputTemplate);
 				}
 				catch(e){
-					ribbonNotification.showRibbon("Template Error: "+error,2000,"error");
+					ribbonNotification.showRibbon("Template Error: "+e.message,5000,"error");
 					console.log(e);
 				}
 			}
@@ -223,6 +240,17 @@ var manuscript = function(config_options){
 		return previewOutput;
 	};
 
+	/**
+	 * returns current instance options object
+	 * @return {object} manuscript instance configuration object
+	 */
+	this.config = function(){
+		return options;
+	};
+
+	/**
+	 * updates html of preview pane
+	 */
 	this.updatePreview = function(){
 		var previewOutput = this.getRenderedOutput();
 		if(previewOutput){
@@ -232,6 +260,10 @@ var manuscript = function(config_options){
 		}
 	}.bind(this);
 
+	/**
+	 * adds listeners to update manuscript from panels
+	 * @param {boolean} childWindow - if true, update listeners to use child window otherwise pane on page
+	 */
 	this.addInfoPanelListeners = function(childWindow){
 		var info_dimension_width,
 			info_dimension_option,
@@ -259,20 +291,41 @@ var manuscript = function(config_options){
 			info_dimension_width.addEventListener("change",updatePreviewPaneSize, false);
 			info_dimension_height.addEventListener("change",updatePreviewPaneSize,false);
 		}
-
 	};
 
+	/**
+	 * interface for plugins to update instance object
+	 * @param {string} name - name of new instance object
+	 * @param {varied} value - value of new instance object variable, could be a function, object or anything
+	 */
 	this.modifyInstance = function(name,value){
-		// manuscriptapp.modifyInstance("bark",function(){console.log("woof")});
 		this[name]=value;
 	};
 
+	/**
+	 * add event listeners for menu bar
+	 */
 	this.addMenuBarListeners = function(){
-		document.getElementById("_mss_export-mms-to-html").addEventListener("click",exportToHTMLClickEventHandler, false);
+		document.getElementById("_mms-main-navigation").addEventListener("click",navigationMenuClickEventHandler,false);
 	};
 
-	var exportToHTMLClickEventHandler = function(e){
-		manuscript.downloadRenderedOutput(this);
+	/**
+	 * event handler for click events on menu bar
+	 * @param {object} e - event object
+	 */
+	var navigationMenuClickEventHandler = function(e){
+		var etarget = e.target;
+		switch(etarget.id){
+			case "_mss_export-mms-to-html":
+				manuscript.downloadRenderedOutput(this);
+				break;
+			case "_mss_file-new":
+				silkscreenModal.showSilkscreen("New File","silly message");
+				break;
+			case "_mss_file-save":
+				manuscript.saveManuscriptFile(this);
+				break;
+		}
 	}.bind(this);
 
 	function updateInfoFilename_childWindow(e){
@@ -477,12 +530,38 @@ var manuscript = function(config_options){
 };
 util.inherits(manuscript,events.EventEmitter);
 
+/**
+ * save manuscript file, overwriteable for other save options like wordpress or periodic
+ * @static
+ * @param {object} obj - a way to pass the current manuscript instance object
+ */
+manuscript.saveManuscriptFile = function(obj){
+	ribbonNotification.showRibbon("Saving File",false,"info");
+	zip = new JSZip();
+	zip.folder("styles").file("style1.less", "body{color:red;}");
+	zip.folder("styles").file("style1.css", "body{font-weight:bold;}");
+	zip.folder("scripts").file("testjs.js", "console.log('javascript');");
+	zip.folder("templates").file("temp.ejs", "Hello ejs file\n");
+	zip.file("manuscript.json", '{info:"this is the json file"}');
+	zip.file("manuscript.ejs", '{info:"this is the json file"}');
+	var zipcontent = (JSZip.support.uint8array) ? zip.generate({type : "uint8array"}) : zip.generate({type : "string"});
+	var blob = new Blob([zipcontent], {type: "application/zip;charset=utf-8"});
+	saveAs(blob, obj.getFileName()+".zip");
+	ribbonNotification.hideRibbon();
+};
+
+/**
+ * downloads preview pane as flat html file
+ * @static
+ * @param {object} obj - a way to pass the current manuscript instance object
+ */
 manuscript.downloadRenderedOutput = function(obj){
 	var renderedOutput = obj.getRenderedOutput();
 	if(renderedOutput){
+		ribbonNotification.showRibbon("Rendered HTML Preview Ready",2000,"success");
 		var blob = new Blob([renderedOutput], {type: "text/html;charset=utf-8"});
 		saveAs(blob, obj.getFileName()+".html");
-		ribbonNotification.showRibbon("Rendered HTML Preview Ready",2000,"success");
+		ribbonNotification.hideRibbon();
 	}
 };
 
@@ -510,7 +589,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 <br clear="both">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.2</a> on Thu May 22 2014 21:47:49 GMT-0400 (EDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.2</a> on Fri May 23 2014 18:09:58 GMT-0400 (EDT)
 </footer>
 
 <script> prettyPrint(); </script>

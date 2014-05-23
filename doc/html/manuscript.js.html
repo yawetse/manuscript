@@ -39,18 +39,15 @@ var classie = require('classie'),
 	events = require('events'),
 	domhelper = require('domhelper'),
 	platter = require('platterjs'),
-	// codemirror = require('../node_modules/codemirror/lib/codemirror'),
+	ribbon = require('ribbonjs'),
 	CodeMirror = require('codemirror'),
 	less = require('less'),
+	saveAs = require('filesaver.js'),
 	ejs = require('ejs'),
 	path = require('path'),
-	util = require('util');
+	util = require('util'),
+	ribbonNotification = new ribbon({type:"info",idSelector:"#_mms_ribbon-element"});
 
-	// ejsPreview.open ='{{';
-	// ejsPreview.close ='}}';
-
-	// require('csslint');
-	// require('jshint');
 	require('../node_modules/codemirror/addon/edit/matchbrackets');
 	require('../node_modules/codemirror/addon/comment/comment');
 	require('../node_modules/codemirror/addon/comment/continuecomment');
@@ -59,10 +56,6 @@ var classie = require('classie'),
 	require('../node_modules/codemirror/addon/fold/indent-fold');
 	require('../node_modules/codemirror/addon/fold/brace-fold');
 	require('../node_modules/codemirror/addon/fold/foldgutter');
-	// require('../node_modules/codemirror/addon/lint/lint');
-	// require('../node_modules/codemirror/addon/lint/javascript-lint');
-	// require('../node_modules/codemirror/addon/lint/json-lint');
-	// require('../node_modules/codemirror/addon/lint/css-lint');
 	require('../node_modules/codemirror/mode/css/css');
 	require('../node_modules/codemirror/mode/htmlembedded/htmlembedded');
 	require('../node_modules/codemirror/mode/javascript/javascript');
@@ -82,10 +75,26 @@ var classie = require('classie'),
  * @todo to do later
  */
 var manuscript = function(config_options){
+	console.log("TODO: modal module - https://github.com/yawetse/npmd-ui-modal/blob/master/example/example1.html");
+	console.log("TODO: add saving by zipping files and download: http://stuk.github.io/jszip/, use workers: https://developer.mozilla.org/en-US/docs/Web/Guide/Performance/Using_web_workers");
+	console.log("TODO: error pane, use stroller effects");
+	console.log("TODO: plugins --append scripts to bottom of body");
+	console.log("TODO: start empty, load files using web workers");
+	console.log("TODO: multiple scripts,styles,template includes");
+
 	/** module default configuration */
 	var options,
 		defaults = {
-			'verticalCentered' : true
+			'verticalCentered' : true,
+			filename: 'newdoc'
+		},
+		savefile ={
+			info:null,
+			template: null,
+			stylesheets:null,
+			scripts:null,
+			data:null,
+			template_includes:null
 		},
 		container,
 		lessparser = new less.Parser({}),
@@ -149,29 +158,43 @@ var manuscript = function(config_options){
 	 * intialize a new manuscript
 	 */
 	this.init = function(){
-		documentiFrame.style.height = window.innerHeight+"px";
-		documentiFrame.style.width = window.innerWidth+"px";
+		documentiFrame.style.height = '768px';// window.innerHeight+"px";
+		documentiFrame.style.width = '1024px';//window.innerWidth+"px";
+
 
 		platterInfoPanel.init();
 		platterTemplate.init();
 		platterStyles.init();
 		platterData.init();
-		// platterAssets.init();
+		this.updatePreview();
 
 		// window.platterStyles = platterStyles;
 		// window.styleEditor = styleEditor;
-		this.updatePreview();
-
+		// this.saveMMS();
+		// manuscript.downloadRenderedOutput(this);
+		this.addMenuBarListeners();
 		this.addInfoPanelListeners();
+		updateInfoFilename();
+		addEventBindings();
+
+		this.emit("intializedManuscript",true);
+
 	}.bind(this);
 
-	this.updatePreview = function(){
+
+	this.getFileName = function(){
+		return options.filename;
+	};
+
+	this.getRenderedOutput = function(){
+		console.log("in rend out");
 		var lessdata = styleEditor.getValue(),
 			templateLayout,
 			outputTemplate,
-			previewOutput;
+			previewOutput = false;
 		lessparser.parse(lessdata,function(error,rendered){
 			if(error){
+				ribbonNotification.showRibbon("LESS css error: "+error,2000,"error");
 				console.log(error);
 			}
 			else{
@@ -185,32 +208,42 @@ var manuscript = function(config_options){
 					});
 				}
 				catch(e){
+					ribbonNotification.showRibbon("Template Error: "+error,2000,"error");
 					console.log(e);
 				}
 				try{
 					previewOutput = ejs.render(outputTemplate);
-
-					// console.log(previewOutput);
-					documentiFrame.contentDocument.open();
-					documentiFrame.contentDocument.write(previewOutput);
-					documentiFrame.contentDocument.close();
 				}
 				catch(e){
+					ribbonNotification.showRibbon("Template Error: "+error,2000,"error");
 					console.log(e);
 				}
 			}
 		});
+		return previewOutput;
 	};
+
+	this.updatePreview = function(){
+		var previewOutput = this.getRenderedOutput();
+		if(previewOutput){
+			documentiFrame.contentDocument.open();
+			documentiFrame.contentDocument.write(previewOutput);
+			documentiFrame.contentDocument.close();
+		}
+	}.bind(this);
 
 	this.addInfoPanelListeners = function(childWindow){
 		var info_dimension_width,
 			info_dimension_option,
+			info_dimension_filename,
 			info_dimension_height;
 		if(typeof childWindow !== 'undefined' && childWindow===true){
 			info_dimension_width = platterInfoPanel.config().windowObjectReference.document.getElementById("_mss_panel-info-dimension-width"),
 			info_dimension_height = platterInfoPanel.config().windowObjectReference.document.getElementById("_mss_panel-info-dimension-height"),
 			info_dimension_option = platterInfoPanel.config().windowObjectReference.document.getElementById("_mss_panel-info-dimension-option");
+			info_dimension_filename = platterInfoPanel.config().windowObjectReference.document.getElementById("_mss_panel-info-filename");
 
+			info_dimension_filename.addEventListener("keyup",updateInfoFilename_childWindow, false);
 			info_dimension_option.addEventListener("change",updateInfoDimensions_childWindow, false);
 			info_dimension_width.addEventListener("change",updatePreviewPaneSize_childWindow, false);
 			info_dimension_height.addEventListener("change",updatePreviewPaneSize_childWindow,false);
@@ -219,13 +252,41 @@ var manuscript = function(config_options){
 			info_dimension_width = document.getElementById("_mss_panel-info-dimension-width"),
 			info_dimension_height = document.getElementById("_mss_panel-info-dimension-height"),
 			info_dimension_option = document.getElementById("_mss_panel-info-dimension-option");
+			info_dimension_filename = document.getElementById("_mss_panel-info-filename");
 
+			info_dimension_filename.addEventListener("keyup",updateInfoFilename, false);
 			info_dimension_option.addEventListener("change",updateInfoDimensions, false);
 			info_dimension_width.addEventListener("change",updatePreviewPaneSize, false);
 			info_dimension_height.addEventListener("change",updatePreviewPaneSize,false);
 		}
 
 	};
+
+	this.modifyInstance = function(name,value){
+		// manuscriptapp.modifyInstance("bark",function(){console.log("woof")});
+		this[name]=value;
+	};
+
+	this.addMenuBarListeners = function(){
+		document.getElementById("_mss_export-mms-to-html").addEventListener("click",exportToHTMLClickEventHandler, false);
+	};
+
+	var exportToHTMLClickEventHandler = function(e){
+		manuscript.downloadRenderedOutput(this);
+	}.bind(this);
+
+	function updateInfoFilename_childWindow(e){
+		updateInfoFilename(e,true);
+	}
+
+	function updateInfoFilename(e,childWindow){
+		if(typeof childWindow !== 'undefined' && childWindow===true){
+			options.filename = platterInfoPanel.config().windowObjectReference.document.getElementById("_mss_panel-info-filename").value;
+		}
+		else{
+			options.filename = document.getElementById("_mss_panel-info-filename").value;
+		}
+	}
 
 	function updateInfoDimensions_childWindow(e){
 		updateInfoDimensions(e,true);
@@ -247,6 +308,10 @@ var manuscript = function(config_options){
 		}
 
 		switch(info_dimension_option.value){
+			case "max":
+				info_dimension_width.value=window.innerWidth+"px";
+				info_dimension_height.value=window.innerHeight+"px";
+				break;
 			case "desktop":
 				info_dimension_width.value='1200px';
 				info_dimension_height.value='900px';
@@ -368,45 +433,57 @@ var manuscript = function(config_options){
 		}.bind(this),1000);
 	}.bind(this);
 
-	templateEditor.on("change",liveUpdatePreview);
-	styleEditor.on("change",liveUpdatePreview);
-	dataEditor.on("change",liveUpdatePreview);
-	platterInfoPanel.on("openedPlatterPane",function(data){
-		refreshAllStyleEditors();
-	});
-	platterInfoPanel.on("openedPlatterWindow",function(data){
-		addStyleSheetToChildWindow(platterInfoPanel,'info');
-	});
-	platterInfoPanel.on("closedPlatterWindow",function(data){
-		// refreshStyleEditor();
-	});
-	platterStyles.on("openedPlatterPane",function(data){
-		refreshAllStyleEditors();
-	});
-	platterStyles.on("openedPlatterWindow",function(data){
-		addStyleSheetToChildWindow(platterStyles,'style');
-	});
-	platterStyles.on("closedPlatterWindow",function(data){
-		refreshStyleEditor();
-	});
-	platterTemplate.on("openedPlatterPane",function(data){
-		refreshAllStyleEditors();
-	});
-	platterTemplate.on("openedPlatterWindow",function(data){
-		addStyleSheetToChildWindow(platterTemplate,'template');
-	});
-	platterTemplate.on("closedPlatterWindow",function(data){
-		refreshTemplateEditor();
-	});
-	platterData.on("openedPlatterPane",function(data){
-		refreshAllStyleEditors();
-	});
-	platterData.on("openedPlatterWindow",function(data){
-		addStyleSheetToChildWindow(platterData,'data');
-	});
-	platterData.on("closedPlatterWindow",function(data){
-		refreshDataEditor();
-	});
+	function addEventBindings(){
+		templateEditor.on("change",liveUpdatePreview);
+		styleEditor.on("change",liveUpdatePreview);
+		dataEditor.on("change",liveUpdatePreview);
+		platterInfoPanel.on("openedPlatterPane",function(data){
+			refreshAllStyleEditors();
+		});
+		platterInfoPanel.on("openedPlatterWindow",function(data){
+			addStyleSheetToChildWindow(platterInfoPanel,'info');
+		});
+		platterInfoPanel.on("closedPlatterWindow",function(data){
+			// refreshStyleEditor();
+		});
+		platterStyles.on("openedPlatterPane",function(data){
+			refreshAllStyleEditors();
+		});
+		platterStyles.on("openedPlatterWindow",function(data){
+			addStyleSheetToChildWindow(platterStyles,'style');
+		});
+		platterStyles.on("closedPlatterWindow",function(data){
+			refreshStyleEditor();
+		});
+		platterTemplate.on("openedPlatterPane",function(data){
+			refreshAllStyleEditors();
+		});
+		platterTemplate.on("openedPlatterWindow",function(data){
+			addStyleSheetToChildWindow(platterTemplate,'template');
+		});
+		platterTemplate.on("closedPlatterWindow",function(data){
+			refreshTemplateEditor();
+		});
+		platterData.on("openedPlatterPane",function(data){
+			refreshAllStyleEditors();
+		});
+		platterData.on("openedPlatterWindow",function(data){
+			addStyleSheetToChildWindow(platterData,'data');
+		});
+		platterData.on("closedPlatterWindow",function(data){
+			refreshDataEditor();
+		});
+	}
+};
+util.inherits(manuscript,events.EventEmitter);
+
+manuscript.downloadRenderedOutput = function(obj){
+	var renderedOutput = obj.getRenderedOutput();
+	if(renderedOutput){
+		var blob = new Blob([renderedOutput], {type: "text/html;charset=utf-8"});
+		saveAs(blob, obj.getFileName()+".html");
+		ribbonNotification.showRibbon("Rendered HTML Preview Ready",2000,"success");
+	}
 };
 
 module.exports = manuscript;
@@ -433,7 +510,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 <br clear="both">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.2</a> on Wed May 21 2014 21:07:07 GMT-0400 (EDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.2</a> on Thu May 22 2014 21:47:49 GMT-0400 (EDT)
 </footer>
 
 <script> prettyPrint(); </script>

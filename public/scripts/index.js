@@ -66,11 +66,20 @@ var classie = require('classie'),
  * @copyright Copyright (c) 2014 Typesettin. All rights reserved.
  * @license MIT
  * @module manuscript
- * @requires module:classie
- * @requires module:util-extent
- * @requires module:util
- * @requires module:domhelper
- * @requires module:events
+ * @requires classie
+ * @requires util-extend
+ * @requires domhelper
+ * @requires events
+ * @requires platterjs
+ * @requires ribbonjs
+ * @requires silkscreenjs
+ * @requires codemirror
+ * @requires less
+ * @requires filesaver.js
+ * @requires jszip
+ * @requires ejs
+ * @requires path
+ * @requires util
  * @todo to do later
  */
 var manuscript = function(config_options){
@@ -527,7 +536,7 @@ util.inherits(manuscript,events.EventEmitter);
 
 /**
  * save manuscript file, overwriteable for other save options like wordpress or periodic
- * @static
+ * @global
  * @param {object} obj - a way to pass the current manuscript instance object
  */
 manuscript.saveManuscriptFile = function(obj){
@@ -547,7 +556,7 @@ manuscript.saveManuscriptFile = function(obj){
 
 /**
  * downloads preview pane as flat html file
- * @static
+ * @global
  * @param {object} obj - a way to pass the current manuscript instance object
  */
 manuscript.downloadRenderedOutput = function(obj){

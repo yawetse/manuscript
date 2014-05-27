@@ -329,6 +329,11 @@ var manuscript = function(config_options){
 			case "_mss_file-save":
 				manuscript.saveManuscriptFile(this);
 				break;
+			case "_mss_file-open":
+				silkscreenModal.showSilkscreen("Open",'<div id="_mss-file-open-dropzone" class="_mss-file-open-dropzone">'+
+					'<div id="drop_zone">Drop files here</div>'+
+					'<output id="file_list2"></output></div>');
+				break;
 		}
 	}.bind(this);
 
@@ -490,6 +495,11 @@ var manuscript = function(config_options){
 		}.bind(this),1000);
 	}.bind(this);
 
+	/**
+	 * event bindings for platters
+	 * @memberOf manuscript
+	 * @method addEventBindings
+	 */
 	function addEventBindings(){
 		templateEditor.on("change",liveUpdatePreview);
 		styleEditor.on("change",liveUpdatePreview);
